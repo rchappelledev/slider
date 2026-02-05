@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Custom Slider with URL Parameter</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 50px;
+        }
+        .slider-container {
+            width: 300px;
+            margin: auto;
+        }
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            outline: none;
+            cursor: pointer;
+            background: linear-gradient(to right, blue 50%, lightgray 50%);
+        }
+        input[type="range"]::-webkit-slider-runnable-track {
+            height: 8px;
+            border-radius: 5px;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: blue;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+            margin-top: -6px;
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: blue;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="slider-container">
+        <input type="range" id="slider" min="1" max="100" value="50">
+    </div>
+    <script>
+        const slider = document.getElementById("slider");
+
+        function updateSliderTrack() 
+        {
+            const value = Number(slider.value);
+            const min = Number(slider.min);
+            const max = Number(slider.max);
+            const percentage = ((value - min) / (max - min)) * 100;
+            slider.style.background = `linear-gradient(to right, blue ${percentage}%, lightgray ${percentage}%)`;
+            slider.setAttribute("value", String(value));
+        }
+
+        function getPluginsValue() 
+        {
+            const filename = window.location.pathname.split("/").pop() || "SliderURL.html";
+            return "PLUGINS:" + filename + "#value=" + slider.value;
+        }
+
+        function onInput() 
+        {
+            updateSliderTrack();
+
+            // Update the URL with the new slider value.
+            location.hash = `value=${slider.value}`;
+
+            // And return the updated filename + slider value to MobileFrame for them to update their references
+            if (typeof ReturnStringToMobileFrame === "function") 
+            {
+                ReturnStringToMobileFrame(getPluginsValue());
+            }
+        }
+
+        function initSliderWithNewValue() 
+        {
+            // Get the value from URL.
+            const params = new URLSearchParams(location.hash.slice(1));
+            if (params.has("value")) 
+            {
+                const num = Number(params.get("value"));
+                if (!Number.isNaN(num)) 
+                {
+                    const clamped = Math.max(Number(slider.min), Math.min(Number(slider.max), num));
+                    // Skip redundant update when hash was set by our own onInput (slider already has this value).
+                    if (Number(slider.value) !== clamped) 
+                    {
+                        slider.value = clamped;
+                        updateSliderTrack();
+                    }
+                }
+            }
+            else 
+            {
+                updateSliderTrack();
+            }
+        }
+
+        slider.addEventListener("input", onInput);
+        window.addEventListener("hashchange", initSliderWithNewValue);
+        initSliderWithNewValue();
+    </script>
+</body>
+</html>
